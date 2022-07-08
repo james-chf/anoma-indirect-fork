@@ -1,0 +1,42 @@
+on:
+  - push
+
+name: CI
+
+jobs:
+  check:
+    name: Build
+    strategy:
+      matrix:
+        target:
+          - aarch64-unknown-linux-gnu
+        platform:
+          - ubuntu-22.04
+      fail-fast: true
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential clang-tools curl git libssl-dev pkg-config
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          target: ${{ matrix.target }}
+      - name: Build release binaries
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.target }} --release
+      - name: Publish binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}-release
+          path: |
+            target/release/anoma
+            target/release/anomac
+            target/release/anoman
+            target/release/anomad
